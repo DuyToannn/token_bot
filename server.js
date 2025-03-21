@@ -24,17 +24,27 @@ app.post('/api/submit', async (req, res) => {
         console.log('Đã kết nối thành công với MongoDB');
         
         const db = client.db('account');
-        const collection = db.collection('new88');
+        
+        // Xác định collection dựa trên loại form
+        let collection;
+        if (req.body.type === 'new88') {
+            collection = db.collection('new88');
+        } else if (req.body.type === 'j88') {
+            collection = db.collection('j88');
+        } else {
+            throw new Error('Loại form không hợp lệ');
+        }
 
         // Lưu dữ liệu
         const result = await collection.insertOne({
-            ...req.body,
+            _pat: req.body._pat,
+            _prt: req.body._prt,
             createdAt: new Date()
         });
 
         res.status(200).json({
             success: true,
-            message: 'Dữ liệu đã được lưu thành công',
+            message: `Dữ liệu ${req.body.type.toUpperCase()} đã được lưu thành công`,
             id: result.insertedId
         });
 
@@ -53,7 +63,7 @@ app.post('/api/submit', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server đang chạy tại http://localhost:${PORT}`);
     console.log('MongoDB URL:', mongoUrl); // Kiểm tra URL
