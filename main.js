@@ -4,8 +4,6 @@ document.getElementById('accountForm').addEventListener('submit', async (e) => {
     const formData = {
         _pat: document.getElementById('_pat').value,
         _prt: document.getElementById('_prt').value,
-        accountId: document.getElementById('accountId').value,
-        timestamp: new Date()
     };
 
     try {
