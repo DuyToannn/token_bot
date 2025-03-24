@@ -59,3 +59,34 @@ document.getElementById('j88Form').addEventListener('submit', async (e) => {
         alert('Có lỗi xảy ra khi lưu dữ liệu J88!');
     }
 });
+
+// Handle Hi88 form submission 
+document.getElementById('hi88Form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = {
+        _pat: document.getElementById('hi88_pat').value,
+        _prt: document.getElementById('hi88_prt').value,
+        type: 'hi88'
+    };
+
+    try {
+        const response = await fetch('/api/submit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (response.ok) {
+            alert('Dữ liệu Hi88 đã được lưu thành công!');
+            document.getElementById('hi88Form').reset();
+        } else {
+            alert('Có lỗi xảy ra khi lưu dữ liệu Hi88!');
+        }
+    } catch (error) {
+        console.error('Lỗi:', error);
+        alert('Có lỗi xảy ra khi lưu dữ liệu Hi88!');
+    }
+});

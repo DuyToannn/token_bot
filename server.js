@@ -24,13 +24,15 @@ app.post('/api/submit', async (req, res) => {
         console.log('Đã kết nối thành công với MongoDB');
         
         const db = client.db('account');
-        
+            
         // Xác định collection dựa trên loại form
         let collection;
         if (req.body.type === 'new88') {
             collection = db.collection('new88');
         } else if (req.body.type === 'j88') {
             collection = db.collection('j88');
+        } else if (req.body.type === 'hi88') {
+            collection = db.collection('hi88');
         } else {
             throw new Error('Loại form không hợp lệ');
         }
