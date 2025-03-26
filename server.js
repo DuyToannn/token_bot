@@ -39,9 +39,10 @@ app.post('/api/submit', async (req, res) => {
 
         // Lưu dữ liệu
         const result = await collection.insertOne({
+            _account: req.body._account, // Lưu tên tài khoản
             _pat: req.body._pat,
             _prt: req.body._prt,
-            createdAt: new Date()
+
         });
 
         res.status(200).json({

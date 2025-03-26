@@ -3,6 +3,7 @@ document.getElementById('new88Form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = {
+        _account: document.getElementById('new88_account').value,
         _pat: document.getElementById('new88_pat').value,
         _prt: document.getElementById('new88_prt').value,
         type: 'new88'
@@ -34,6 +35,7 @@ document.getElementById('j88Form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = {
+        _account: document.getElementById('j88_account').value,
         _pat: document.getElementById('j88_pat').value,
         _prt: document.getElementById('j88_prt').value,
         type: 'j88'
@@ -65,6 +67,7 @@ document.getElementById('hi88Form').addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const formData = {
+        _account: document.getElementById('hi88_account').value,
         _pat: document.getElementById('hi88_pat').value,
         _prt: document.getElementById('hi88_prt').value,
         type: 'hi88'
