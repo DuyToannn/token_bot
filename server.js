@@ -22,17 +22,15 @@ app.post('/api/submit', async (req, res) => {
         // Kết nối MongoDB
         client = await MongoClient.connect(mongoUrl);
         console.log('Đã kết nối thành công với MongoDB');
-        
+
         const db = client.db('account');
-            
+
         // Xác định collection dựa trên loại form
         let collection;
         if (req.body.type === 'new88') {
             collection = db.collection('new88');
         } else if (req.body.type === 'j88') {
             collection = db.collection('j88');
-        } else if (req.body.type === 'hi88') {
-            collection = db.collection('hi88');
         } else {
             throw new Error('Loại form không hợp lệ');
         }
@@ -65,6 +63,37 @@ app.post('/api/submit', async (req, res) => {
         }
     }
 });
+
+app.get('/api/accounts/:type', async (req, res) => {
+    let client;
+    try {
+        client = await MongoClient.connect(mongoUrl);
+        const db = client.db('account');
+        const collection = db.collection(req.params.type);
+
+        const accounts = await collection.find({}, {
+            projection: {
+                _account: 1,
+                is_locked: 1,
+                token_expired: 1
+            }
+        }).toArray();
+
+        res.json(accounts);
+    } catch (error) {
+        console.error('Lỗi:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Có lỗi xảy ra khi lấy dữ liệu',
+            error: error.message
+        });
+    } finally {
+        if (client) {
+            await client.close();
+        }
+    }
+});
+
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
