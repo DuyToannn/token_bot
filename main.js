@@ -67,21 +67,24 @@ document.getElementById('j88Form').addEventListener('submit', async (e) => {
 // Handle Hi88 form submission 
 
 
+
+
+
 async function fetchAndDisplayAccounts(type) {
     try {
         const response = await fetch(`/api/accounts/${type}`);
         if (!response.ok) throw new Error('Network response was not ok');
         const accounts = await response.json();
-        
+
         const tbody = document.querySelector(`#${type}Table tbody`);
         tbody.innerHTML = '';
-        
+
         // Sort accounts to show newest first
         accounts.sort((a, b) => {
             // Assuming _id contains timestamp, newer items have larger _id
             return b._id?.localeCompare(a._id);
         });
-        
+
         // Only display the 5 newest accounts
         accounts.slice(0, 5).forEach(account => {
             const row = document.createElement('tr');
@@ -97,14 +100,87 @@ async function fetchAndDisplayAccounts(type) {
     }
 }
 
-// Lấy dữ liệu khi trang được tải
+
+
+
+async function fetchBotStatuses() {
+    try {
+        const response = await fetch(`/api/bot-status`);
+        if (!response.ok) throw new Error('Không thể lấy danh sách trạng thái bot');
+        const bots = await response.json();
+        // Sắp xếp các bot theo tên (bot name)
+        bots.sort((a, b) => {
+            // Trích xuất số từ bot_name và so sánh
+            const numA = parseInt(a.bot_name.replace('bot', ''));
+            const numB = parseInt(b.bot_name.replace('bot', ''));
+            return numA - numB;
+        });
+        const tbody = document.querySelector('#botTable tbody');
+        tbody.innerHTML = '';
+        bots.forEach(bot => {
+            // Map bot IDs to display names
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${bot.bot_name}</td>
+                <td style="color: ${bot.is_enabled ? 'green' : 'red'}">${bot.is_enabled ? 'Bật' : 'Tắt'}</td>
+                <td>
+                    <label class="toggle-switch">
+                        <input type="checkbox" class="botToggle" data-bot-id="${bot.bot_id}" ${bot.is_enabled ? 'checked' : ''}>
+                        <span class="slider"></span>
+                    </label>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        // Thêm sự kiện cho các công tắc
+        document.querySelectorAll('.botToggle').forEach(toggle => {
+            toggle.addEventListener('change', async (event) => {
+                const botId = event.target.dataset.botId;
+                const isEnabled = event.target.checked;
+                await updateBotStatus(botId, isEnabled);
+            });
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách trạng thái bot:', error);
+        alert('Không thể kết nối đến server để lấy danh sách trạng thái bot');
+    }
+}
+
+// Hàm cập nhật trạng thái bot
+async function updateBotStatus(botId, isEnabled) {
+    try {
+        const response = await fetch(`/api/bot-status/${botId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ is_enabled: isEnabled, bot_name: botId })
+        });
+        if (!response.ok) throw new Error('Không thể cập nhật trạng thái bot');
+        await fetchBotStatuses(); // Cập nhật lại bảng
+    } catch (error) {
+        console.error(`Lỗi khi cập nhật trạng thái bot ${botId}:`, error);
+        alert(`Không thể cập nhật trạng thái bot ${botId}`);
+        fetchBotStatuses(); // Làm mới bảng nếu lỗi
+    }
+}
+
+// Thêm sự kiện cho công tắc chính
 document.addEventListener('DOMContentLoaded', () => {
     fetchAndDisplayAccounts('new88');
     fetchAndDisplayAccounts('j88');
+    fetchBotStatuses(); // Fetch all bot statuses
 });
 
 // Cập nhật dữ liệu sau khi form được submit thành công
 const updateTables = () => {
     fetchAndDisplayAccounts('new88');
     fetchAndDisplayAccounts('j88');
+    fetchBotStatuses(); // Update bot statuses as well
 };
+
+// Automatically refresh bot statuses every 30 seconds
+setInterval(fetchBotStatuses, 30000);
+
+
+
+
+
