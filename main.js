@@ -103,56 +103,114 @@ async function fetchAndDisplayAccounts(type) {
 
 
 
+function getBotNumber(botId) {
+    // Kiểm tra nếu bot_id bắt đầu bằng "Cổng" hoặc có chứa số
+    const portNumber = botId.match(/(?:Cổng\s*)?(\d+)/);
+    return portNumber ? parseInt(portNumber[1]) : Infinity; // Trả về Infinity cho các bot không có số
+}
+
+function getBotDisplayName(botId, category) {
+    if (category === 'j88') {
+        // Nếu bot_id đã bắt đầu bằng "Cổng", giữ nguyên
+        if (botId.startsWith('Cổng')) {
+            return botId;
+        }
+        // Nếu bot_id chỉ là số, thêm "Cổng" vào
+        const portNumber = botId.match(/^(\d+)$/);
+        if (portNumber) {
+            return `Cổng ${portNumber[1]}`;
+        }
+        // Trường hợp còn lại, giữ nguyên tên bot
+        return botId;
+    } else {
+        // Với NEW88, luôn hiển thị dạng "Cổng X"
+        const portNumber = botId.match(/\d+/);
+        if (portNumber) {
+            return `Cổng ${portNumber[0]}`;
+        }
+        return botId;
+    }
+}
+
 async function fetchBotStatuses() {
     try {
         const response = await fetch(`/api/bot-status`);
         if (!response.ok) throw new Error('Không thể lấy danh sách trạng thái bot');
         const bots = await response.json();
-        // Sắp xếp các bot theo tên (bot name)
-        bots.sort((a, b) => {
-            // Trích xuất số từ bot_name và so sánh
-            const numA = parseInt(a.bot_name.replace('bot', ''));
-            const numB = parseInt(b.bot_name.replace('bot', ''));
-            return numA - numB;
+        
+        // Phân loại bot theo danh mục
+        const new88Bots = bots.filter(bot => bot.category === 'new88');
+        const j88Bots = bots.filter(bot => bot.category === 'j88');
+        
+        // Sắp xếp bot theo số cổng và tên
+        new88Bots.sort((a, b) => getBotNumber(a.bot_id) - getBotNumber(b.bot_id));
+        j88Bots.sort((a, b) => {
+            // Đặt các bot không phải dạng "Cổng" lên trên
+            const aIsPort = a.bot_id.match(/^(?:Cổng\s*)?(\d+)$/);
+            const bIsPort = b.bot_id.match(/^(?:Cổng\s*)?(\d+)$/);
+            
+            if (!aIsPort && bIsPort) return -1;
+            if (aIsPort && !bIsPort) return 1;
+            if (!aIsPort && !bIsPort) return a.bot_id.localeCompare(b.bot_id);
+            
+            return getBotNumber(a.bot_id) - getBotNumber(b.bot_id);
         });
-        const tbody = document.querySelector('#botTable tbody');
-        tbody.innerHTML = '';
-        bots.forEach(bot => {
-            // Map bot IDs to display names
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${bot.bot_name}</td>
-                <td style="color: ${bot.is_enabled ? 'green' : 'red'}">${bot.is_enabled ? 'Bật' : 'Tắt'}</td>
-                <td>
-                    <label class="toggle-switch">
-                        <input type="checkbox" class="botToggle" data-bot-id="${bot.bot_id}" ${bot.is_enabled ? 'checked' : ''}>
-                        <span class="slider"></span>
-                    </label>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
-        // Thêm sự kiện cho các công tắc
-        document.querySelectorAll('.botToggle').forEach(toggle => {
-            toggle.addEventListener('change', async (event) => {
-                const botId = event.target.dataset.botId;
-                const isEnabled = event.target.checked;
-                await updateBotStatus(botId, isEnabled);
-            });
-        });
+        
+        // Cập nhật bảng NEW88
+        updateBotTable('new88BotTable', new88Bots);
+        
+        // Cập nhật bảng J88
+        updateBotTable('j88BotTable', j88Bots);
     } catch (error) {
         console.error('Lỗi khi lấy danh sách trạng thái bot:', error);
         alert('Không thể kết nối đến server để lấy danh sách trạng thái bot');
     }
 }
 
+function updateBotTable(tableId, bots) {
+    const tbody = document.querySelector(`#${tableId} tbody`);
+    tbody.innerHTML = '';
+    bots.forEach(bot => {
+        const displayName = getBotDisplayName(bot.bot_id, bot.category);
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${displayName}</td>
+            <td style="color: ${bot.is_enabled ? 'green' : 'red'}">${bot.is_enabled ? 'Bật' : 'Tắt'}</td>
+            <td>
+                <label class="toggle-switch">
+                    <input type="checkbox" class="botToggle" data-bot-id="${bot.bot_id}" data-category="${bot.category}" ${bot.is_enabled ? 'checked' : ''}>
+                    <span class="slider"></span>
+                </label>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+    
+    // Thêm sự kiện cho các công tắc
+    document.querySelectorAll(`#${tableId} .botToggle`).forEach(toggle => {
+        toggle.addEventListener('change', async (event) => {
+            const botId = event.target.dataset.botId;
+            const category = event.target.dataset.category;
+            const isEnabled = event.target.checked;
+            await updateBotStatus(botId, isEnabled, category);
+        });
+    });
+}
+
 // Hàm cập nhật trạng thái bot
-async function updateBotStatus(botId, isEnabled) {
+async function updateBotStatus(botId, isEnabled, category) {
     try {
+        const displayName = getBotDisplayName(botId, category);
+        
         const response = await fetch(`/api/bot-status/${botId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_enabled: isEnabled, bot_name: botId })
+            body: JSON.stringify({ 
+                is_enabled: isEnabled, 
+                bot_name: displayName,
+                category: category 
+            })
         });
         if (!response.ok) throw new Error('Không thể cập nhật trạng thái bot');
         await fetchBotStatuses(); // Cập nhật lại bảng
