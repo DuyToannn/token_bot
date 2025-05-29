@@ -28,18 +28,25 @@ app.post('/api/submit', async (req, res) => {
             collection = db.collection('new88');
         } else if (req.body.type === 'j88') {
             collection = db.collection('j88');
+        } else if (req.body.type === 'hi88') {
+            collection = db.collection('hi88');
+        } else if (req.body.type === 'f8bet') {
+            collection = db.collection('f8bet');
         } else {
             throw new Error('Loại form không hợp lệ');
         }
 
-        const result = await collection.insertOne({
+        let doc = {
             _account: req.body._account,
             _pat: req.body._pat,
-            _prt: req.body._prt,
             is_locked: false,
             token_expired: false,
             created_at: new Date()
-        });
+        };
+        if (req.body._prt) {
+            doc._prt = req.body._prt;
+        }
+        const result = await collection.insertOne(doc);
 
         res.status(200).json({
             success: true,
@@ -192,6 +199,10 @@ app.post('/api/bot-status/:bot_id', async (req, res) => {
             await client.close();
         }
     }
+});
+
+app.get('/bot2', (req, res) => {
+    res.sendFile(__dirname + '/bot2.html');
 });
 
 const PORT = process.env.PORT || 3000;
